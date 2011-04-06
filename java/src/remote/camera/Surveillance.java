@@ -45,6 +45,7 @@ public class Surveillance implements LCMSubscriber, ImageReader.Listener, Parame
     private byte[] imageBuffer;
     private int width;
     private int height;
+    private double timeStamp;
     private String format;
     
     private boolean run = true;
@@ -94,10 +95,10 @@ public class Surveillance implements LCMSubscriber, ImageReader.Listener, Parame
     
     public void run()
     {
-        long startTime = 0;
         long time = 0;
         IMediaWriter writer = null;
         FilmStatus status = null;
+        BufferedImage image;
         
         while(run)
         {
@@ -113,27 +114,28 @@ public class Surveillance implements LCMSubscriber, ImageReader.Listener, Parame
                         e.printStackTrace();
                     }
                 }
+                
+                if(status == null) 
+                {
+                    new FilmStatus(pg.gd("pt"), pg.gd("vt"), pg.gi("h"), width, height);
+                }
+                
+                if(System.currentTimeMillis() - time > pg.gi("sbp")*1000)
+                {
+                    status.addImage(imageBuffer);
+                    time = System.currentTimeMillis();
+                }
+
+                image = ImageConvert.convertToImage(format, width, height, imageBuffer);
             }
             
-            BufferedImage image = ImageConvert.convertToImage(format, width, height, imageBuffer);
             vbImage.addBuffered(new VisImage(new VisTexture(image),new double[] { 0., 0, }, 
                     new double[] {image.getWidth(), image.getHeight() }, true));
             vbImage.switchBuffer();
             
-            if(status == null) 
-            {
-                new FilmStatus(pg.gd("pt"), pg.gd("vt"), pg.gi("h"), width, height);
-            }
-            
-            if(System.currentTimeMillis() - time > pg.gi("sbp")*1000)
-            {
-                status.addImage(imageBuffer);
-                time = System.currentTimeMillis();
-            }
-            
             if( writer != null && writer.isOpen() )
             {
-                writer.encodeVideo(0,image, System.nanoTime()-startTime, TimeUnit.NANOSECONDS);
+                writer.encodeVideo(0,image, (long)(timeStamp*1000000000), TimeUnit.NANOSECONDS);
                 
                 if(status.shouldStopFilming())
                 {
@@ -145,7 +147,6 @@ public class Surveillance implements LCMSubscriber, ImageReader.Listener, Parame
             {
                 writer = ToolFactory.makeWriter(getDate()+".mp4");
                 writer.addVideoStream(0, 0, width, height);
-                startTime = System.nanoTime();
             }
         }
     }
@@ -192,6 +193,7 @@ public class Surveillance implements LCMSubscriber, ImageReader.Listener, Parame
             width = ifmt.width;
             height = ifmt.height;
             format = ifmt.format;
+            timeStamp = time;
             bufferReady = true;
             lock.notify();
         }
@@ -216,6 +218,7 @@ public class Surveillance implements LCMSubscriber, ImageReader.Listener, Parame
                     width = path.width;
                     height = path.height;
                     format = path.format;
+                    timeStamp = path.utime;
                     bufferReady = true;
                     lock.notify();
                 }

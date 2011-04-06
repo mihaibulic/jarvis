@@ -9,6 +9,9 @@ public class FilmStatus
     private double pixelThreshold;
     private double varianceThreshold;
     
+    private boolean newImage = false;
+    private boolean shouldFilm = false;
+    
     public FilmStatus(double pixelThreshold, double varianceThreshold, int history, int width, int height)
     {
         this.pixelThreshold = pixelThreshold;
@@ -20,8 +23,7 @@ public class FilmStatus
     public void addImage(byte[] image)
     {
         oldImages[oldestImage] = image;
-        
-        calculateVariance();
+        newImage = true;
     }
 
     private void calculateVariance()
@@ -47,16 +49,25 @@ public class FilmStatus
     public boolean shouldFilm()
     {
         int count = 0;
+        boolean value = shouldFilm;
         
-        for(int a = 0; a < variance.length; a++)
+        if(newImage)
         {
-            if(variance[a] > varianceThreshold)
+            calculateVariance();
+            newImage = false;
+
+            for(int a = 0; a < variance.length; a++)
             {
-                count++;
+                if(variance[a] > varianceThreshold)
+                {
+                    count++;
+                }
             }
+            
+            value = count > pixelThreshold;
         }
         
-        return (count > variance.length*pixelThreshold);
+        return value;
     }
     
     public boolean shouldStopFilming()

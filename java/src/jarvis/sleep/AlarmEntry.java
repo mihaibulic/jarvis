@@ -1,4 +1,4 @@
-package remote.sleep;
+package jarvis.sleep;
 
 import java.util.Date;
 import java.util.Timer;
@@ -15,9 +15,9 @@ public class AlarmEntry
         enabled = false;
     }
 
-    public AlarmEntry(Timer timer, Date date)
+    public AlarmEntry(Date date)
     {
-        this.timer = timer;
+        timer = new Timer();
         this.date = date;
         enabled = false;
     }
@@ -50,6 +50,11 @@ public class AlarmEntry
     public void setEnabled(boolean enabled)
     {
         this.enabled = enabled;
+    }
+    
+    public void toggle()
+    {
+        enabled = !enabled;
     }
     
     public String toString()

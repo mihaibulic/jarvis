@@ -1,17 +1,14 @@
-package remote.sleep;
+package jarvis.sleep;
 
+import jarvis.music.MusicDecoder;
 import java.awt.Color;
 import java.awt.Component;
-import java.awt.ComponentOrientation;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -20,91 +17,91 @@ import javax.swing.DefaultListCellRenderer;
 import javax.swing.DefaultListModel;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
-import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JList;
+import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JSpinner;
 import javax.swing.SpinnerDateModel;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
-import april.util.GetOpt;
-import april.util.TimeUtil;
 
-public class AlarmClock implements ActionListener, ListSelectionListener
+public class AlarmClock extends JPanel implements ActionListener, ListSelectionListener
 {
-    private final double VERSION = 0.2;
-    private final int SNOOZE = 10 * 60; // in seconds
+    private static final long serialVersionUID = 1L;
+
+    private final int SECOND = 1000; // milliseconds
+    private final int MINUTE = SECOND*60; // milliseconds
+    private final int HOUR   = MINUTE*60; // milliseconds
+    private final int DAY    = HOUR*24; // milliseconds
+    
+    private final int SNOOZE = 10 * MINUTE; // in milliseconds
     private final int HOURS = 8;
     private final int MINUTES = 00;
 
-    Runtime run = Runtime.getRuntime();
-    private JFrame frame;
-
+    private MusicDecoder mp3;
+    
     private JButton addOffset;
     private JButton snooze;
     private JButton stop;
-    
     private JSpinner hours;
     private JSpinner minutes;
-
     private JSpinner eventTime;
     private JButton add;
     private JList events;
     private DefaultListModel listModel;
-
     private String labels[] = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
     private JCheckBox[] days;
-
+    private JButton sleep;
     private JButton set;
     
     ArrayList<AlarmEntry> entries = new ArrayList<AlarmEntry>();
     AlarmEntry mainEntry = new AlarmEntry();
 
-    public AlarmClock()
+    public AlarmClock() throws InterruptedException
     {
-        frame = new JFrame("Smart Alarm v" + VERSION);
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.getContentPane().setComponentOrientation(ComponentOrientation.LEFT_TO_RIGHT);
-
-        frame.getContentPane().setLayout(new GridBagLayout());
+        super(new GridBagLayout());
         GridBagConstraints constraints = new GridBagConstraints();
-
+        constraints.gridheight = 1;
+        constraints.gridwidth = 1;
+        
         addOffset = new JButton("Add Offset Alarm");
-        snooze = new JButton("Snoozzzze");
+        snooze = new JButton("Snooze");
         stop = new JButton("Stop");
         hours = new JSpinner(new SpinnerNumberModel(HOURS,0,23,1));;
         minutes = new JSpinner(new SpinnerNumberModel(MINUTES,0,59,1));
         constraints.fill = GridBagConstraints.HORIZONTAL;
+        
         constraints.gridx = 0;
         constraints.gridy = 0;
-        frame.getContentPane().add(new JLabel("hours:"), constraints);
+        
+        add(new JLabel("hours:"), constraints);
         constraints.gridx++;
-        frame.getContentPane().add(hours, constraints);
+        add(hours, constraints);
         constraints.gridx++;
-        frame.getContentPane().add(new JLabel("min:"), constraints);
+        add(new JLabel("min:"), constraints);
         constraints.gridx++;
-        frame.getContentPane().add(minutes, constraints);
+        add(minutes, constraints);
         constraints.gridx++;
-        frame.getContentPane().add(addOffset, constraints);
+        add(addOffset, constraints);
         constraints.gridx++;
-        frame.getContentPane().add(snooze, constraints);
+        add(snooze, constraints);
         constraints.gridx++;
-        frame.getContentPane().add(stop, constraints);
+        add(stop, constraints);
         
         setDate();
         add = new JButton("Add Event");
-        set = new JButton("Set Alarm!");
+        set = new JButton("Set Alarm");
         constraints.gridy++;
         constraints.gridx = 0;
         constraints.gridwidth=4;
-        frame.getContentPane().add(eventTime, constraints);
+        add(eventTime, constraints);
         constraints.gridx+=4;
         constraints.gridwidth=1;
-        frame.getContentPane().add(add, constraints);
+        add(add, constraints);
         constraints.gridx++;
-        frame.getContentPane().add(set, constraints);
+        add(set, constraints);
 
         days = new JCheckBox[labels.length];
         constraints.anchor = GridBagConstraints.NORTHWEST;
@@ -113,21 +110,24 @@ public class AlarmClock implements ActionListener, ListSelectionListener
         for (int x = 0; x < labels.length; x++)
         {
             days[x] = new JCheckBox(labels[x]);
-            frame.getContentPane().add(days[x], constraints);
+            add(days[x], constraints);
             constraints.gridy++;
         }
 
-        listModel = new DefaultListModel();
+        sleep = new JButton("Sleep");
+        constraints.gridy -= 5;
+        constraints.gridx = 0;
+        constraints.gridwidth = 7;
+        add(sleep, constraints);
+        constraints.gridy++;
         
+        listModel = new DefaultListModel();
         events = new JList(listModel);
         events.setVisibleRowCount(5);
         events.setCellRenderer(new CustomListCellRenderer());
         JScrollPane eventsPane = new JScrollPane(events);
-        constraints.gridy -= 4;
-        constraints.gridx = 0;
-        constraints.gridwidth = 7;
         constraints.gridheight = 10;
-        frame.getContentPane().add(eventsPane, constraints);
+        add(eventsPane, constraints);
         constraints.gridy++;
         
         addOffset.addActionListener(this);
@@ -135,61 +135,74 @@ public class AlarmClock implements ActionListener, ListSelectionListener
         stop.addActionListener(this);
         add.addActionListener(this);
         set.addActionListener(this);
+        sleep.addActionListener(this);
         events.addListSelectionListener(this);
         
         snooze.setVisible(false);
         stop.setVisible(false);
         
-        frame.setSize(650, 200);
-        frame.setVisible(true);
-
-        events.addKeyListener(new KeyListener()
-        {
-            @Override
-            public void keyPressed(KeyEvent kv)
-            {}
-            
-            @Override
-            public void keyTyped(KeyEvent kv)
-            {}
-
-            @Override
-            public void keyReleased(KeyEvent kv)
-            {
-                if(kv.getKeyCode() == 32) //space bar
-                {
-                    addOffset();
-                    // fetch from google
-                    setAlarms();
-                }
-            }
-        });
-        events.addMouseListener(new MouseAdapter()
-        {
-            public void mouseClicked(MouseEvent click)
-            {
-                if(entries.size()>0)
-                {
-                    if (click.isShiftDown())
-                    {
-                        stop(entries.get(events.locationToIndex(click.getPoint())), true, false);
-                    }
-                    else
-                    {
-                        if(entries.get(events.locationToIndex(click.getPoint())).isEnabled())
-                        {
-                            entries.get(events.locationToIndex(click.getPoint())).setEnabled(false);
-                        }
-                        else
-                        {
-                            entries.get(events.locationToIndex(click.getPoint())).setEnabled(true);
-                        }
-                    }
-                }
-            }
-        });
+        events.addMouseListener(new Mouse());
+        
+        (new Refresh()).start();
     }
-
+    
+    private class Refresh extends Thread
+    {
+        public void run()
+        {
+            try
+            {
+                Thread.sleep(setDate() - System.currentTimeMillis());
+            } catch (InterruptedException e)
+            {
+                e.printStackTrace();
+            }
+        }
+    }
+    
+    private class Mouse extends MouseAdapter
+    {
+        public void mouseClicked(MouseEvent click)
+        {
+            if(entries.size()>0)
+            {
+                if(click.getClickCount() == 2)
+                {
+                    Date date = entries.get(events.locationToIndex(click.getPoint())).getDate();
+                    AlarmPopUp popup = new AlarmPopUp(date);
+                    int option = popup.popUp();
+                    
+                    switch(option)
+                    {
+                        case AlarmPopUp.APPLY:
+                            Date newDate = popup.getNewDate();
+                            entries.get(events.locationToIndex(click.getPoint())).setDate(newDate);
+                            startAlarm(entries.get(events.locationToIndex(click.getPoint())));
+                            break;
+                        case AlarmPopUp.DELETE:
+                            stopAlarm(entries.get(events.locationToIndex(click.getPoint())), true, false);
+                            break;
+                        case AlarmPopUp.CANCEL:
+                        default:
+                                break;
+                    }
+                }
+                else
+                {
+                    if (click.getButton() == MouseEvent.BUTTON3) // right click
+                    {
+                        stopAlarm(entries.get(events.locationToIndex(click.getPoint())), true, false);
+                    }
+                    else if (click.getButton() == MouseEvent.BUTTON1) // left click
+                    {
+                        entries.get(events.locationToIndex(click.getPoint())).toggle();
+                        repaint();
+                    }
+                }
+            }
+        }
+    }
+    
     private class CustomListCellRenderer extends DefaultListCellRenderer 
     {  
         private static final long serialVersionUID = 1L;
@@ -211,9 +224,46 @@ public class AlarmClock implements ActionListener, ListSelectionListener
         }  
     }
 
-    class Alarm extends TimerTask
+    @Override
+    public void actionPerformed(ActionEvent event)
     {
-        String song = "home/april/Desktop/play.mp3";
+        Object source = event.getSource();
+
+        if (source == addOffset)
+        {
+            setOffset();
+        }
+        else if (source == snooze)
+        {
+            stopAlarm(mainEntry, false, true);
+            start(mainEntry, SNOOZE);
+            mainEntry.setEnabled(true);
+        }
+        else if (source == stop)
+        {
+            stopAlarm(mainEntry, false, true);
+        }
+        else if (source == add)
+        {
+            AlarmEntry entry = new AlarmEntry(((SpinnerDateModel) eventTime.getModel()).getDate());
+            startAlarm(entry);
+        }
+        else if (source == set)
+        {
+            setAlarms();
+        }
+        
+        else if (source == sleep)
+        {
+            setOffset();
+            // fetch from google
+            setAlarms();
+        }
+    }
+    
+    private class Alarm extends TimerTask
+    {
+        String song = "file://home/april/jarvis/java/test2.mp3"; // XXX
         AlarmEntry entry;
         boolean[] repeat = new boolean[labels.length];
         
@@ -254,7 +304,7 @@ public class AlarmClock implements ActionListener, ListSelectionListener
                     if(repeat[day])
                     {
                         Date date = getDate(x);
-                        AlarmEntry newEntry = new AlarmEntry();
+                        AlarmEntry newEntry = new AlarmEntry(date);
                         start(newEntry,repeat,date);
                         entries.add(newEntry);
                         
@@ -265,44 +315,48 @@ public class AlarmClock implements ActionListener, ListSelectionListener
                     }
                 }
                 
-                play();
+                try
+                {
+                    play();
+                } catch (InterruptedException e)
+                {
+                    e.printStackTrace();
+                }
             }
-            
         }
 
-        private void play()
+        private void play() throws InterruptedException
         {
             mainEntry = entry;
 
-            try
+            if (mp3 != null)
             {
-                run.exec("rhythmbox-client --set-volume=0 --play >> /tmp/AlarmClock.log");
-                for(double vol = 0; vol <= 1; vol+=0.005)
-                {
-                    if(!entry.isEnabled())
-                    {
-                        break;
-                    }
-                    TimeUtil.sleep(200);
-                    run.exec("rhythmbox-client --set-volume=" + vol + " >> /tmp/AlarmClock.log");
-                }
-            } catch (IOException e)
-            {
-                e.printStackTrace();
+                mp3.stop_playback();
             }
+            
+            mp3 = new MusicDecoder(song);
+            mp3.mute();
+            mp3.play_playback();
+
+            float max = mp3.getMaxVolume();
+            for(float vol = 0; vol <= max; vol+=max/60)
+            {
+                Thread.sleep(1000);
+                mp3.setVolume(vol);
+            }        
         }
 
-        public void setSong(String song)
-        {
-            this.song = song;
-        }
-
-        private int getDayOfWeek()
+         private int getDayOfWeek()
         {
             return (Calendar.getInstance()).get(Calendar.DAY_OF_WEEK)-1;
         }
         
-        private int getNextDay(int day)
+         private Date getDate(int days)
+         {
+             return new Date(System.currentTimeMillis() + DAY*days);
+         }
+
+         private int getNextDay(int day)
         {
             return (day < 6) ? day+1 : 0;
         }
@@ -311,73 +365,19 @@ public class AlarmClock implements ActionListener, ListSelectionListener
         {
             (entry.getTimer()).schedule(new Alarm(entry, repeat), date);
         }
-        
-        private Date getDate(int days)
-        {
-            int oneDay = 1000*60*60*24; // milliseconds
-            
-            return new Date(System.currentTimeMillis() + oneDay*days);
-        }
     }
 
-    public static void main(String[] args)
+    private Date getOffsetDate(JSpinner hours, JSpinner minutes)
     {
-        GetOpt opts = new GetOpt();
+        int hrs = ((SpinnerNumberModel) hours.getModel()).getNumber().intValue();
+        int min = ((SpinnerNumberModel) minutes.getModel()).getNumber().intValue();
 
-        opts.addBoolean('h', "help", false, "See this help screen");
-
-        if (!opts.parse(args))
-        {
-            System.out.println("option error: " + opts.getReason());
-        }
-
-        if (opts.getBoolean("help"))
-        {
-            System.out.println("Usage: Smart alarm");
-            opts.doHelp();
-            System.exit(1);
-        }
-
-        new AlarmClock();
+        return new Date(System.currentTimeMillis() + (hrs * 60 * 60 * 1000) + (min * 60 * 1000));
     }
 
-    @Override
-    public void actionPerformed(ActionEvent event)
+    private Date getOffsetDate(int milliseconds)
     {
-        Object source = event.getSource();
-
-        if (source == addOffset)
-        {
-            addOffset();
-        }
-        else if (source == snooze)
-        {
-            stop(mainEntry, false, true);
-            
-            entries.add(mainEntry);
-            listModel.addElement(getOffsetDate(SNOOZE));
-            events = new JList(listModel);
-            start(mainEntry, SNOOZE);
-            mainEntry.setEnabled(true);
-        }
-        else if (source == stop)
-        {
-            stop(mainEntry, false, true);
-        }
-        else if (source == add)
-        {
-            AlarmEntry entry = new AlarmEntry();
-            
-            start(entry, ((SpinnerDateModel) eventTime.getModel()).getDate());
-            entries.add(entry);
-
-            listModel.addElement(((SpinnerDateModel) eventTime.getModel()).getDate());
-            events = new JList(listModel);
-        }
-        else if (source == set)
-        {
-            setAlarms();
-        }
+        return new Date(System.currentTimeMillis() + milliseconds);
     }
 
     private void setAlarms()
@@ -395,40 +395,11 @@ public class AlarmClock implements ActionListener, ListSelectionListener
             }
         }
         entries.get(earliest).setEnabled(true);
-        frame.repaint();
-    }
-
-    private void addOffset()
-    {
-        AlarmEntry entry = new AlarmEntry();
-        start(entry, getSeconds(hours, minutes));
-        entries.add(entry);
-        listModel.addElement(getOffsetDate(hours, minutes));
-        events = new JList(listModel);
-    }
-
-    private int getSeconds(JSpinner hours, JSpinner minutes)
-    {
-        int hrs = ((SpinnerNumberModel) hours.getModel()).getNumber().intValue();
-        int min = ((SpinnerNumberModel) minutes.getModel()).getNumber().intValue();
         
-        return (hrs * 60 * 60) + (min * 60);
+        repaint();
     }
 
-    private Date getOffsetDate(JSpinner hours, JSpinner minutes)
-    {
-        int hrs = ((SpinnerNumberModel) hours.getModel()).getNumber().intValue();
-        int min = ((SpinnerNumberModel) minutes.getModel()).getNumber().intValue();
-
-        return new Date(System.currentTimeMillis() + (hrs * 3600 * 1000) + (min * 60 * 1000));
-    }
-
-    private Date getOffsetDate(int seconds)
-    {
-        return new Date(System.currentTimeMillis() + seconds*1000);
-    }
-
-    private void setDate()
+    private long setDate()
     {
         Calendar calendar = Calendar.getInstance();
         Date minDate = calendar.getTime();
@@ -446,19 +417,31 @@ public class AlarmClock implements ActionListener, ListSelectionListener
         
         eventTime = new JSpinner(new SpinnerDateModel(initDate, minDate, latestDate, Calendar.YEAR));
         eventTime.setEditor(new JSpinner.DateEditor(eventTime, "MM/dd/yyyy HH:mm"));
+        
+        return initDate.getTime();
     }
     
-    private void start(AlarmEntry entry, int seconds)
+    private void setOffset()
     {
-        (entry.getTimer()).schedule(new Alarm(entry), seconds * 1000);
+        startAlarm(new AlarmEntry(getOffsetDate(hours, minutes)));
     }
 
-    private void start(AlarmEntry entry, Date date)
+    private void start(AlarmEntry entry, int milliseconds)
     {
-        (entry.getTimer()).schedule(new Alarm(entry), date);
+        entry.setDate(getOffsetDate(milliseconds));
+        startAlarm(entry);
     }
 
-    private void stop(AlarmEntry entry, boolean stopTimer, boolean stopMusic)
+    public void startAlarm(AlarmEntry entry)
+    {
+        entries.add(entry);
+        listModel.addElement(entry.getDate());
+        events = new JList(listModel);
+        
+        (entry.getTimer()).schedule(new Alarm(entry), entry.getDate());
+    }
+
+    public void stopAlarm(AlarmEntry entry, boolean stopTimer, boolean stopMusic)
     {
         if(stopTimer)
         {
@@ -472,14 +455,10 @@ public class AlarmClock implements ActionListener, ListSelectionListener
         {
             snooze.setVisible(false);
             stop.setVisible(false);
-            Runtime run = Runtime.getRuntime();
             entry.setEnabled(false);
-            try
+            if (mp3 != null)
             {
-                run.exec("rhythmbox-client --pause >> /tmp/AlarmClock.log");
-            } catch (IOException e)
-            {
-                e.printStackTrace();
+                mp3.stop_playback();
             }
         }
     }

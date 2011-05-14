@@ -1,4 +1,4 @@
-package remote.camera;
+package jarvis.camera;
 
 import java.awt.BorderLayout;
 import java.awt.image.BufferedImage;
@@ -61,7 +61,7 @@ public class Surveillance implements LCMSubscriber, ImageReader.Listener, Parame
     {
         showGUI();
         
-        ir = new ImageReader(url, true, false, 15);
+        ir = new ImageReader(true, false, 15, url);
         ir.addListener(this);
         ir.start();
         
@@ -185,7 +185,7 @@ public class Surveillance implements LCMSubscriber, ImageReader.Listener, Parame
     }
     
     @Override
-    public void handleImage(byte[] im, ImageSourceFormat ifmt, double time)
+    public void handleImage(byte[] im, ImageSourceFormat ifmt, double time, int camera)
     {
         synchronized(lock)
         {

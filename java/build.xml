@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 
-<project name="remote" default="build" basedir=".">
+<project name="jarvis" default="build" basedir=".">
 
   <!-- Build everything -->
   <target name="build" depends="clean,make-src,build-java,build-jar"/>
@@ -12,7 +12,7 @@
   <target name="distclean" depends="clean">
     <delete dir="build"/>
     <delete dir="docs"/>
-    <delete file="remote.jar"/>
+    <delete file="jarvis.jar"/>
     <delete dir="depcache"/>
   </target>
 
@@ -53,7 +53,7 @@
 
   <!-- Build Jar -->
   <target name="build-jar">
-    <jar destfile="remote.jar" compress="false">
+    <jar destfile="jarvis.jar" compress="false">
 
       <fileset dir="build">
 	<include name="**/*.class" />
@@ -61,10 +61,10 @@
       </fileset>
 
       <manifest>
-	<attribute name="Main-Class" value="edu.umich.remote.BasicCameraGUI" />
+	<attribute name="Main-Class" value="edu.umich.jarvis.BasicCameraGUI" />
       </manifest>
     </jar>
-    <copy file="remote.jar" todir="." />
+    <copy file="jarvis.jar" todir="." />
   </target>
 
   <target name="build-java">
@@ -86,7 +86,7 @@
     <delete>
       <fileset dir="build" includes="**/*.class"/>
       <fileset dir="." includes="**/*~" defaultexcludes="no"/>
-      <fileset dir="." includes="remote.jar"/>
+      <fileset dir="." includes="jarvis.jar"/>
     </delete>
   </target>
 

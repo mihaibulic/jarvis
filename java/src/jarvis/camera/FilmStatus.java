@@ -1,4 +1,4 @@
-package remote.camera;
+package jarvis.camera;
 
 public class FilmStatus
 {

@@ -1,10 +1,9 @@
 package jarvis.UI;
 
+import jarvis.music.MusicPanel;
 import jarvis.sleep.AlarmClock;
 import java.awt.event.ActionEvent;
-import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
-import java.net.MalformedURLException;
 import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.JComponent;
@@ -16,30 +15,34 @@ public class MainPanel extends JTabbedPane
 {
     private static final long serialVersionUID = 1L;
 
-    private JComponent alarmPanel;
-    private JComponent musicPanel;
+    private JComponent schedulePanel;
+    private JComponent mediaPanel;
     private JComponent housePanel;
     private JComponent commPanel;
 
-    public MainPanel() throws MalformedURLException, InterruptedException
+    private static final int keyEventMaskKey = KeyEvent.CTRL_MASK; // mask needed to active tab switching
+    
+    // first key in sequence to set visible tab (ie VK_1 corresponds to number key 1 for tab 0, number key 2 for tab 1, key 3 for tab 2, etc.)
+    private static final int keyEventBaseKey = KeyEvent.VK_1; 
+    
+    private static final KeyStroke NEXT_HOTKEY = KeyStroke.getKeyStroke(KeyEvent.VK_RIGHT, KeyEvent.CTRL_MASK);
+    private static final KeyStroke PREV_HOTKEY = KeyStroke.getKeyStroke(KeyEvent.VK_LEFT, KeyEvent.CTRL_MASK);
+    
+    public MainPanel()
     {
-        alarmPanel = new AlarmClock();
-        musicPanel = new JLabel("music");
+        GlobalHotkeyManager manager = GlobalHotkeyManager.getInstance();
+
+        schedulePanel = new AlarmClock();
+        mediaPanel = new MusicPanel();
         housePanel = new JLabel("house");
         commPanel  = new JLabel("communications");
         
-        add("Schedule", alarmPanel);
-        add("Media", musicPanel);
+        add("Schedule", schedulePanel);
+        add("Media", mediaPanel);
         add("House", housePanel);
         add("Communication", commPanel);
 
-        addShortcut(KeyStroke.getKeyStroke(KeyEvent.VK_1, InputEvent.CTRL_MASK),0);
-        addShortcut(KeyStroke.getKeyStroke(KeyEvent.VK_2, InputEvent.CTRL_MASK),1);
-        addShortcut(KeyStroke.getKeyStroke(KeyEvent.VK_3, InputEvent.CTRL_MASK),2);
-        addShortcut(KeyStroke.getKeyStroke(KeyEvent.VK_4, InputEvent.CTRL_MASK),3);
-        
-        addShortcut(KeyStroke.getKeyStroke(KeyEvent.VK_RIGHT, InputEvent.CTRL_MASK), createAction(true));
-        addShortcut(KeyStroke.getKeyStroke(KeyEvent.VK_LEFT, InputEvent.CTRL_MASK), createAction(false));
+        addShortcuts(manager, keyEventBaseKey, keyEventMaskKey);
     }
 
     private Action createAction(final boolean forward)
@@ -61,7 +64,7 @@ public class MainPanel extends JTabbedPane
         return action;
     }
     
-    private void addShortcut(KeyStroke stroke, final int tabIndex)
+    private void addShortcut(GlobalHotkeyManager manager, KeyStroke stroke, final int tabIndex)
     {
         Action tab = new AbstractAction() 
         {
@@ -72,13 +75,24 @@ public class MainPanel extends JTabbedPane
             }
         };
         
-        getInputMap().put(stroke, tab.toString());
-        getActionMap().put(tab.toString(), tab);
+        manager.getInputMap().put(stroke, tab.toString());
+        manager.getActionMap().put(tab.toString(), tab);
     }
 
-    private void addShortcut(KeyStroke stroke, Action action)
+    private void addShortcut(GlobalHotkeyManager manager, KeyStroke stroke, Action action)
     {
-        getInputMap().put(stroke, action.toString());
-        getActionMap().put(action.toString(), action);
+        manager.getInputMap().put(stroke, action.toString());
+        manager.getActionMap().put(action.toString(), action);
+    }
+    
+    private void addShortcuts(GlobalHotkeyManager manager, int keyEventbaseKey, int keyEventMaskKey)
+    {
+        addShortcut(manager, NEXT_HOTKEY, createAction(true));
+        addShortcut(manager, PREV_HOTKEY, createAction(false));
+        
+        for(int x = 0; x < getTabCount(); x++)
+        {
+            addShortcut(manager, KeyStroke.getKeyStroke(keyEventbaseKey + x, keyEventMaskKey), x);
+        }
     }
 }

@@ -59,12 +59,14 @@ public class AlarmClock extends JPanel implements ActionListener, ListSelectionL
     ArrayList<AlarmEntry> entries = new ArrayList<AlarmEntry>();
     AlarmEntry mainEntry = new AlarmEntry();
 
-    public AlarmClock() throws InterruptedException
+    public AlarmClock()
     {
         super(new GridBagLayout());
         GridBagConstraints constraints = new GridBagConstraints();
         constraints.gridheight = 1;
         constraints.gridwidth = 1;
+        constraints.gridx = 0;
+        constraints.gridy = 0;
         
         addOffset = new JButton("Add Offset Alarm");
         snooze = new JButton("Snooze");
@@ -72,9 +74,6 @@ public class AlarmClock extends JPanel implements ActionListener, ListSelectionL
         hours = new JSpinner(new SpinnerNumberModel(HOURS,0,23,1));;
         minutes = new JSpinner(new SpinnerNumberModel(MINUTES,0,59,1));
         constraints.fill = GridBagConstraints.HORIZONTAL;
-        
-        constraints.gridx = 0;
-        constraints.gridy = 0;
         
         add(new JLabel("hours:"), constraints);
         constraints.gridx++;
@@ -458,7 +457,13 @@ public class AlarmClock extends JPanel implements ActionListener, ListSelectionL
             entry.setEnabled(false);
             if (mp3 != null)
             {
-                mp3.stop_playback();
+                try
+                {
+                    mp3.stop_playback();
+                } catch (InterruptedException e)
+                {
+                    e.printStackTrace();
+                }
             }
         }
     }

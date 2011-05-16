@@ -1,14 +1,13 @@
 package jarvis.UI;
 
 import java.awt.Toolkit;
-import java.net.MalformedURLException;
 import javax.swing.JFrame;
 
 public class MainUI extends JFrame
 {
     private static final long serialVersionUID = 1L;
 
-    public MainUI() throws InterruptedException, MalformedURLException
+    public MainUI()
     {
         super("Jarvis Main UI");
         
@@ -24,7 +23,7 @@ public class MainUI extends JFrame
         setVisible(true);
     }
     
-    public static void main(String[] args) throws MalformedURLException, InterruptedException
+    public static void main(String[] args)
     {
         new MainUI();
     }

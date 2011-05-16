@@ -70,7 +70,7 @@ public class MusicDecoder extends Thread
     
     public void run()
     {
-        while (container.readNextPacket(packet) >= 0)
+        while (container.readNextPacket(packet) >= 0 && !stop)
         {
             if (packet.getStreamIndex() == audioStreamId)
             {
@@ -103,6 +103,9 @@ public class MusicDecoder extends Thread
                     } catch (InterruptedException e)
                     {
                         e.printStackTrace();
+                    } finally
+                    {
+                        quit();
                     }
                 }
                 if(stop)
@@ -156,15 +159,14 @@ public class MusicDecoder extends Thread
     {
         if (mLine != null)
         {
-            mLine.drain();
             mLine.close();
-            mLine = null;
         }
     }
 
     private static void playJavaSound(IAudioSamples aSamples)
     {
         byte[] rawBytes = aSamples.getData().getByteArray(0, aSamples.getSize());
+        
         mLine.write(rawBytes, 0, aSamples.getSize());
     }
     
@@ -210,7 +212,7 @@ public class MusicDecoder extends Thread
         }
     }
     
-    public void stop_playback()
+    public void stop_playback() throws InterruptedException
     {
         synchronized(lock)
         {
@@ -236,5 +238,15 @@ public class MusicDecoder extends Thread
         container.seekKeyFrame(audioStreamId, 2, IURLProtocolHandler.SEEK_CUR);
         
         play_playback();
+    }
+    
+    public boolean isPlaying()
+    {
+        return !stop && !pause;
+    }
+    
+    public boolean isPaused()
+    {
+        return !pause;
     }
 }

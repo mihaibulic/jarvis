@@ -54,7 +54,6 @@ public class AlarmClock extends JPanel implements ActionListener, ListSelectionL
     private String labels[] = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
     private JCheckBox[] days;
     private JButton sleep;
-    private JButton set;
     
     ArrayList<AlarmEntry> entries = new ArrayList<AlarmEntry>();
     AlarmEntry mainEntry = new AlarmEntry();
@@ -75,6 +74,16 @@ public class AlarmClock extends JPanel implements ActionListener, ListSelectionL
         minutes = new JSpinner(new SpinnerNumberModel(MINUTES,0,59,1));
         constraints.fill = GridBagConstraints.HORIZONTAL;
         
+        setDate();
+        add = new JButton("Add Event");
+        constraints.gridwidth=4;
+        add(eventTime, constraints);
+        constraints.gridx+=4;
+        constraints.gridwidth=1;
+        add(add, constraints);
+
+        constraints.gridx = 0;
+        constraints.gridy++;
         add(new JLabel("hours:"), constraints);
         constraints.gridx++;
         add(hours, constraints);
@@ -84,23 +93,7 @@ public class AlarmClock extends JPanel implements ActionListener, ListSelectionL
         add(minutes, constraints);
         constraints.gridx++;
         add(addOffset, constraints);
-        constraints.gridx++;
-        add(snooze, constraints);
-        constraints.gridx++;
-        add(stop, constraints);
         
-        setDate();
-        add = new JButton("Add Event");
-        set = new JButton("Set Alarm");
-        constraints.gridy++;
-        constraints.gridx = 0;
-        constraints.gridwidth=4;
-        add(eventTime, constraints);
-        constraints.gridx+=4;
-        constraints.gridwidth=1;
-        add(add, constraints);
-        constraints.gridx++;
-        add(set, constraints);
 
         days = new JCheckBox[labels.length];
         constraints.anchor = GridBagConstraints.NORTHWEST;
@@ -125,15 +118,20 @@ public class AlarmClock extends JPanel implements ActionListener, ListSelectionL
         events.setVisibleRowCount(5);
         events.setCellRenderer(new CustomListCellRenderer());
         JScrollPane eventsPane = new JScrollPane(events);
-        constraints.gridheight = 10;
+        constraints.gridheight = 5;
         add(eventsPane, constraints);
+        constraints.gridheight = 1;
+        constraints.gridy+=5;
+
+        constraints.gridx = 0;
+        add(snooze, constraints);
         constraints.gridy++;
+        add(stop, constraints);
         
         addOffset.addActionListener(this);
         snooze.addActionListener(this);
         stop.addActionListener(this);
         add.addActionListener(this);
-        set.addActionListener(this);
         sleep.addActionListener(this);
         events.addListSelectionListener(this);
         
@@ -247,11 +245,6 @@ public class AlarmClock extends JPanel implements ActionListener, ListSelectionL
             AlarmEntry entry = new AlarmEntry(((SpinnerDateModel) eventTime.getModel()).getDate());
             startAlarm(entry);
         }
-        else if (source == set)
-        {
-            setAlarms();
-        }
-        
         else if (source == sleep)
         {
             setOffset();

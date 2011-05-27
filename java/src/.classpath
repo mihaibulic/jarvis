@@ -5,15 +5,8 @@
 	<classpathentry combineaccessrules="false" kind="src" path="/april"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/magic"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/mihai"/>
-	<classpathentry kind="lib" path="/usr/local/xuggler/share/java/jars/commons-cli.jar"/>
-	<classpathentry kind="lib" path="/usr/local/xuggler/share/java/jars/logback-classic.jar"/>
-	<classpathentry kind="lib" path="/usr/local/xuggler/share/java/jars/logback-core.jar"/>
-	<classpathentry kind="lib" path="/usr/local/xuggler/share/java/jars/slf4j-api.jar"/>
 	<classpathentry kind="lib" path="/usr/local/xuggler/share/java/jars/xuggle-xuggler.jar"/>
-	<classpathentry kind="lib" path="/usr/local/xuggler/share/java/jars/xuggle-xuggler-test.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.USER_LIBRARY/aprilJARs"/>
 	<classpathentry kind="lib" path="/usr/share/java/jaudiotagger.jar"/>
-	<classpathentry kind="lib" path="/usr/share/java/lib/gstreamer-java.jar"/>
-	<classpathentry kind="lib" path="/usr/share/java/fmj.jar"/>
 	<classpathentry kind="output" path=""/>
 </classpath>

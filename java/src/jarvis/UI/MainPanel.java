@@ -28,12 +28,14 @@ public class MainPanel extends JTabbedPane
     private static final KeyStroke NEXT_HOTKEY = KeyStroke.getKeyStroke(KeyEvent.VK_RIGHT, KeyEvent.CTRL_MASK);
     private static final KeyStroke PREV_HOTKEY = KeyStroke.getKeyStroke(KeyEvent.VK_LEFT, KeyEvent.CTRL_MASK);
     
+    private String musicURL = System.getenv("HOME")+"/Music"; // FIXME make this less hardcoded
+    
     public MainPanel()
     {
         GlobalHotkeyManager manager = GlobalHotkeyManager.getInstance();
 
         schedulePanel = new AlarmClock();
-        mediaPanel = new MusicPanel();
+        mediaPanel = new MusicPanel(musicURL);
         housePanel = new JLabel("house");
         commPanel  = new JLabel("communications");
         

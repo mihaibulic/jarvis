@@ -49,11 +49,11 @@ public class MusicPanel extends JPanel
 
     private MusicDecoder decoder;
     
-    public MusicPanel()
+    public MusicPanel(String url)
     {
         int xSize = ((int) Toolkit.getDefaultToolkit().getScreenSize().getWidth());
         int ySize = ((int) Toolkit.getDefaultToolkit().getScreenSize().getHeight());
-        getSortedTags(new File("/home/april/jarvis/test"));
+        getSortedTags(new File(url));
 
         mainTable = new JTable(mainTableEntries.toArray(new String[1][1]), columnNames);
         mainTable.setAutoResizeMode(JTable.AUTO_RESIZE_SUBSEQUENT_COLUMNS);
@@ -232,7 +232,7 @@ public class MusicPanel extends JPanel
     
     public static void main(String[] args)
     {
-        new MusicPanel();
+        new MusicPanel(args[0]);
     }
 
 }

@@ -14,9 +14,10 @@ import javax.swing.JFrame;
 import lcm.lcm.LCM;
 import lcm.lcm.LCMDataInputStream;
 import lcm.lcm.LCMSubscriber;
+import mihai.camera.ImageReader;
+import mihai.lcmtypes.image_path_t;
 import april.jcam.ImageConvert;
 import april.jcam.ImageSource;
-import april.jcam.ImageSourceFormat;
 import april.util.GetOpt;
 import april.util.ParameterGUI;
 import april.util.ParameterListener;
@@ -26,8 +27,6 @@ import april.vis.VisTexture;
 import april.vis.VisWorld;
 import com.xuggle.mediatool.IMediaWriter;
 import com.xuggle.mediatool.ToolFactory;
-import edu.umich.mihai.camera.ImageReader;
-import edu.umich.mihai.lcmtypes.image_path_t;
 
 
 public class Surveillance implements LCMSubscriber, ImageReader.Listener, ParameterListener
@@ -45,7 +44,7 @@ public class Surveillance implements LCMSubscriber, ImageReader.Listener, Parame
     private byte[] imageBuffer;
     private int width;
     private int height;
-    private double timeStamp;
+    private long timeStamp;
     private String format;
     
     private boolean run = true;
@@ -63,6 +62,11 @@ public class Surveillance implements LCMSubscriber, ImageReader.Listener, Parame
         
         ir = new ImageReader(true, false, 15, url);
         ir.addListener(this);
+
+	width = ir.getWidth();
+	height = ir.getHeight();
+	format = ir.getFormat();
+
         ir.start();
         
         this.run();
@@ -135,7 +139,7 @@ public class Surveillance implements LCMSubscriber, ImageReader.Listener, Parame
             
             if( writer != null && writer.isOpen() )
             {
-                writer.encodeVideo(0,image, (long)(timeStamp*1000000000), TimeUnit.NANOSECONDS);
+                writer.encodeVideo(0,image, timeStamp*1000000000, TimeUnit.NANOSECONDS);
                 
                 if(status.shouldStopFilming())
                 {
@@ -185,14 +189,11 @@ public class Surveillance implements LCMSubscriber, ImageReader.Listener, Parame
     }
     
     @Override
-    public void handleImage(byte[] im, ImageSourceFormat ifmt, double time, int camera)
+    public void handleImage(byte[] im, long time, int camera)
     {
         synchronized(lock)
         {
             imageBuffer = im;
-            width = ifmt.width;
-            height = ifmt.height;
-            format = ifmt.format;
             timeStamp = time;
             bufferReady = true;
             lock.notify();

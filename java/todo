@@ -1,0 +1,25 @@
+Schedule
+	finish alarm editor
+	remove add offset from clock (replace with button for "offset settings"?)
+	add google calendar to alarm clock
+	add google calendar to schedule
+
+	BUGS
+		double right click opens alarm edit
+	
+Media
+	add buttons/sliders
+	add search
+	make functions for mp3 player (shuffle, repeat, etc)
+	add queue
+	make hierartical viewing for music
+	add import/delete capability
+	make play counter functional
+	add id3 edit functionality or disable edit
+	add track length as column
+	enable column hiding?
+
+General
+	save gui settings for fast resume
+	add menus?
+	add inter gui communication (lcm?)

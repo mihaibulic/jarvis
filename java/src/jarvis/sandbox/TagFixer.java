@@ -17,9 +17,7 @@ import org.jaudiotagger.audio.exceptions.CannotReadException;
 import org.jaudiotagger.audio.exceptions.CannotWriteException;
 import org.jaudiotagger.audio.exceptions.InvalidAudioFrameException;
 import org.jaudiotagger.audio.exceptions.ReadOnlyFileException;
-import org.jaudiotagger.tag.FieldDataInvalidException;
 import org.jaudiotagger.tag.FieldKey;
-import org.jaudiotagger.tag.KeyNotFoundException;
 import org.jaudiotagger.tag.Tag;
 import org.jaudiotagger.tag.TagException;
 
@@ -48,10 +46,8 @@ public class TagFixer
     
     public TagFixer(String url)
     {
-        File dir = new File(url);
-        
         ArrayList<File> list = new ArrayList<File>();
-        list.addAll(Arrays.asList(dir.listFiles()));   
+        list.addAll(Arrays.asList(new File(url).listFiles()));   
         
         ArrayList<Song> songs = new ArrayList<Song>();
         
@@ -60,18 +56,19 @@ public class TagFixer
         
         try
         {
-            BufferedReader inArtists = new BufferedReader(new FileReader("artists"));
+            String dir = System.getenv("HOME") + File.separator + "jarvis" + File.separator;
+            BufferedReader inArtists = new BufferedReader(new FileReader(dir + "artists"));
             String str = "";
             while ((str = inArtists.readLine()) != null) 
             {
-                StringTokenizer st2 = new StringTokenizer(str,"@");
+                StringTokenizer st2 = new StringTokenizer(str,"->");
                 artists.put(st2.nextToken(), st2.nextToken());
             }
 
-            BufferedReader inGenres = new BufferedReader(new FileReader("genres"));
+            BufferedReader inGenres = new BufferedReader(new FileReader(dir + "genres"));
             while ((str = inGenres.readLine()) != null)
             {
-                StringTokenizer st2 = new StringTokenizer(str,"@");
+                StringTokenizer st2 = new StringTokenizer(str,"->");
                 genres.put(st2.nextToken(), st2.nextToken());
             }
         } catch (IOException e1)

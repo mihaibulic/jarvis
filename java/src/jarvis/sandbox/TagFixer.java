@@ -17,7 +17,9 @@ import org.jaudiotagger.audio.exceptions.CannotReadException;
 import org.jaudiotagger.audio.exceptions.CannotWriteException;
 import org.jaudiotagger.audio.exceptions.InvalidAudioFrameException;
 import org.jaudiotagger.audio.exceptions.ReadOnlyFileException;
+import org.jaudiotagger.tag.FieldDataInvalidException;
 import org.jaudiotagger.tag.FieldKey;
+import org.jaudiotagger.tag.KeyNotFoundException;
 import org.jaudiotagger.tag.Tag;
 import org.jaudiotagger.tag.TagException;
 
@@ -25,12 +27,33 @@ public class TagFixer
 {
     private ArrayList<Tag> tags = new ArrayList<Tag>();
 
+    class Song
+    {
+        String artist;
+        String title;
+        
+        public Song(String artist, String title)
+        {
+            this.artist = artist;
+            this.title = title;
+        }
+        
+        @Override
+        public boolean equals(Object a)
+        {
+            return ((Song)a).title.equals(title) &&
+                   ((Song)a).artist.equals(artist);
+        }
+    }
+    
     public TagFixer(String url)
     {
         File dir = new File(url);
         
         ArrayList<File> list = new ArrayList<File>();
         list.addAll(Arrays.asList(dir.listFiles()));   
+        
+        ArrayList<Song> songs = new ArrayList<Song>();
         
         HashMap<String,String> genres = new HashMap<String,String>();
         HashMap<String,String> artists= new HashMap<String,String>();
@@ -41,7 +64,6 @@ public class TagFixer
             String str = "";
             while ((str = inArtists.readLine()) != null) 
             {
-                System.out.println(str);
                 StringTokenizer st2 = new StringTokenizer(str,"@");
                 artists.put(st2.nextToken(), st2.nextToken());
             }
@@ -49,7 +71,6 @@ public class TagFixer
             BufferedReader inGenres = new BufferedReader(new FileReader("genres"));
             while ((str = inGenres.readLine()) != null)
             {
-                System.out.println(str);
                 StringTokenizer st2 = new StringTokenizer(str,"@");
                 genres.put(st2.nextToken(), st2.nextToken());
             }
@@ -75,22 +96,42 @@ public class TagFixer
                     f = AudioFileIO.read(potentialSong);
                     tag = f.getTag();
                     
-                    String artist = tag.getFirst(FieldKey.ARTIST);
+                    String artist = fix(tag.getFirst(FieldKey.ARTIST));
+                    String title = fix(tag.getFirst(FieldKey.TITLE));
+                    
+                    System.out.println("@@@ (" + tag.getFirst(FieldKey.ARTIST) + ") -> (" + artist + ")");
+                    System.out.println("@@@ \t(" + tag.getFirst(FieldKey.TITLE) + ") -> (" + title + ")");
+                    
+                    if(artists.get(artist) != null)
+                    {
+                        artist = artists.get(artist);
+                    }
 
+                    // set genre
                     if(genres.get(artist) != null)
                     {
                         tag.setField(FieldKey.GENRE, genres.get(artist));
                     }
                     
-                    if(artists.get(artist) != null)
+                    tag.setField(FieldKey.TITLE, title);
+                    tag.setField(FieldKey.ARTIST, artist);
+                    tag.setField(FieldKey.ALBUM_ARTIST, artist);
+                    tag.setField(FieldKey.ALBUM, "none"); // remove album name 
+                    
+                    // search for duplicates
+                    Song test = new Song(artist, title);
+                    if(songs.contains(test))
                     {
-                        tag.setField(FieldKey.ARTIST, artists.get(artist));
+                        System.out.println("@@@@@ found copy:");
+                        System.out.println("\t" + test.artist + " - " + test.title);
+                        potentialSong.delete();
+                    }
+                    else
+                    {
+                        songs.add(test);
+                        f.commit();
                     }
                     
-                    tag.setField(FieldKey.ALBUM, "none"); 
-                    tag.setField(FieldKey.ALBUM_ARTIST, tag.getFirst(FieldKey.ARTIST));
-                    
-                    f.commit();
                 } catch (CannotWriteException e)
                 {
                     e.printStackTrace();
@@ -116,12 +157,6 @@ public class TagFixer
             }
         }
         Collections.sort(tags, new TagComparator());
-        
-//        Collections.sort(artists);
-//        for(String artist : artists)
-//        {
-//            System.out.println(artist);
-//        }
     }
 
     class ExtensionFilter implements FilenameFilter 
@@ -136,6 +171,58 @@ public class TagFixer
         {
           return (name.endsWith(extension));
         }
+    }
+    
+    private String fix(String in)
+    {
+        if(in.isEmpty())
+        {
+            in = "unknown";
+        }
+        
+        if(in.contains("(") && in.contains(")"))
+        {
+            String temp = in.substring(in.indexOf("("), in.indexOf(")"));
+            if(!temp.contains("remix") && !temp.contains("Remix"))
+            {
+                in = in.replaceAll("\\(.*\\)", "");
+            }
+        }
+        
+        String[] keyWords = {"featuring", "ft.", "feat."};
+        
+        for(String word : keyWords)
+        {
+            if(in.contains(word))
+            {
+                in = in.substring(0, in.indexOf(word)-1);
+            }
+        }
+
+        in = in.trim();
+        
+        boolean foundSpace = false;
+        char[] a = in.toCharArray();
+        in = in.substring(0, 1).toUpperCase();
+        for(int x = 1; x < a.length; x++)
+        {
+            if(foundSpace)
+            {
+                in += Character.toUpperCase(a[x]);
+                foundSpace = false;
+            }
+            else if(a[x] == ' ' || a[x] == '_')
+            {
+                in += " ";
+                foundSpace = true;
+            }
+            else
+            {
+                in += a[x];
+            }
+        }
+        
+        return in.trim();
     }
     
     public static void main(String[] args)

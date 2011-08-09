@@ -14,9 +14,8 @@ import javax.swing.JFrame;
 import lcm.lcm.LCM;
 import lcm.lcm.LCMDataInputStream;
 import lcm.lcm.LCMSubscriber;
-import mihai.camera.ImageReader;
+import mihai.camera.CameraDriver;
 import mihai.lcmtypes.image_path_t;
-import april.jcam.ImageConvert;
 import april.jcam.ImageSource;
 import april.util.GetOpt;
 import april.util.ParameterGUI;
@@ -29,7 +28,7 @@ import com.xuggle.mediatool.IMediaWriter;
 import com.xuggle.mediatool.ToolFactory;
 
 
-public class Surveillance implements LCMSubscriber, ImageReader.Listener, ParameterListener
+public class Surveillance implements LCMSubscriber, ParameterListener
 {
 /**
  * This is an example on how to use both ImageReader and the lcm message for image_path
@@ -38,15 +37,10 @@ public class Surveillance implements LCMSubscriber, ImageReader.Listener, Parame
  */
     static LCM lcm = LCM.getSingleton();
 
-    private ImageReader ir;
-    private Object lock = new Object();
-    private boolean bufferReady = false;
+    private CameraDriver driver;
     private byte[] imageBuffer;
-    private int width;
-    private int height;
     private long timeStamp;
-    private String format;
-    
+
     private boolean run = true;
     
     private ParameterGUI pg;
@@ -60,15 +54,8 @@ public class Surveillance implements LCMSubscriber, ImageReader.Listener, Parame
     {
         showGUI();
         
-        ir = new ImageReader(true, false, 15, url);
-        ir.addListener(this);
+        driver = new CameraDriver(url);
 
-	width = ir.getWidth();
-	height = ir.getHeight();
-	format = ir.getFormat();
-
-        ir.start();
-        
         this.run();
     }
     
@@ -104,33 +91,21 @@ public class Surveillance implements LCMSubscriber, ImageReader.Listener, Parame
         FilmStatus status = null;
         BufferedImage image;
         
+        driver.start();
+
         while(run)
         {
-            synchronized(lock)
-            {
-                while(!bufferReady)
-                {
-                    try
-                    {
-                        lock.wait();
-                    } catch (InterruptedException e)
-                    {
-                        e.printStackTrace();
-                    }
-                }
-                
-                if(status == null) 
-                {
-                    new FilmStatus(pg.gd("pt"), pg.gd("vt"), pg.gi("h"), width, height);
-                }
-                
-                if(System.currentTimeMillis() - time > pg.gi("sbp")*1000)
-                {
-                    status.addImage(imageBuffer);
-                    time = System.currentTimeMillis();
-                }
+            image = driver.getFrameImage();
 
-                image = ImageConvert.convertToImage(format, width, height, imageBuffer);
+            if(status == null) 
+            {
+                new FilmStatus(pg.gd("pt"), pg.gd("vt"), pg.gi("h"), image.getWidth(), image.getHeight());
+            }
+            
+            if(System.currentTimeMillis() - time > pg.gi("sbp")*1000)
+            {
+                status.addImage(imageBuffer);
+                time = System.currentTimeMillis();
             }
             
             vbImage.addBuffered(new VisImage(new VisTexture(image),new double[] { 0., 0, }, 
@@ -150,7 +125,7 @@ public class Surveillance implements LCMSubscriber, ImageReader.Listener, Parame
             else if(status.shouldFilm())
             {
                 writer = ToolFactory.makeWriter(getDate()+".mp4");
-                writer.addVideoStream(0, 0, width, height);
+                writer.addVideoStream(0, 0, image.getWidth(), image.getHeight());
             }
         }
     }
@@ -189,40 +164,20 @@ public class Surveillance implements LCMSubscriber, ImageReader.Listener, Parame
     }
     
     @Override
-    public void handleImage(byte[] im, long time, int camera)
-    {
-        synchronized(lock)
-        {
-            imageBuffer = im;
-            timeStamp = time;
-            bufferReady = true;
-            lock.notify();
-        }
-    }
-
-    @Override
     public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins)
     {
         try
         {
             if (channel.contains("cam"))
             {
-                synchronized(lock)
+                image_path_t path = new image_path_t(ins);
+                if(imageBuffer == null) 
                 {
-                    image_path_t path = new image_path_t(ins);
-                    if(imageBuffer == null) 
-                    {
-                        imageBuffer = new byte[path.height*path.width];
-                    }
-                    
-                    new FileInputStream(new File(path.img_path)).read(imageBuffer);
-                    width = path.width;
-                    height = path.height;
-                    format = path.format;
-                    timeStamp = path.utime;
-                    bufferReady = true;
-                    lock.notify();
+                    imageBuffer = new byte[path.height*path.width];
                 }
+                
+                new FileInputStream(new File(path.img_path)).read(imageBuffer);
+                timeStamp = path.utime;
             }
         } catch (IOException e)
         {

@@ -4,7 +4,7 @@
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/april"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/magic"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/mihai"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/work"/>
 	<classpathentry kind="lib" path="/usr/local/xuggler/share/java/jars/xuggle-xuggler.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.USER_LIBRARY/aprilJARs"/>
 	<classpathentry kind="lib" path="/usr/share/java/jaudiotagger.jar"/>

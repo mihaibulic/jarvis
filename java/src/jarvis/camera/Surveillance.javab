@@ -163,7 +163,6 @@ public class Surveillance implements LCMSubscriber, ParameterListener
         run = false;
     }
     
-    @Override
     public void messageReceived(LCM lcm, String channel, LCMDataInputStream ins)
     {
         try
@@ -185,7 +184,6 @@ public class Surveillance implements LCMSubscriber, ParameterListener
         }
     }
 
-    @Override
     public void parameterChanged(ParameterGUI pg, String name)
     {
         
